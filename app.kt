@@ -286,7 +286,7 @@ private fun writeRect(writer: XMLStreamWriter, xy: String, wh: String) {
 }
 
 private fun writePointCoord(writer: XMLStreamWriter, attrName: String, attrValue: Double) {
-    writer.writeAttribute(attrName, String.format("%fin", attrValue * 11.0 + 0.25))
+    writer.writeAttribute(attrName, String.format("%fin", attrValue * 11.0 + 0.5))
 }
 
 private fun writerProlog(writer: XMLStreamWriter) {
@@ -294,8 +294,8 @@ private fun writerProlog(writer: XMLStreamWriter) {
     writer.writeDTD("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">")
     writer.writeStartElement("svg")
     writer.writeAttribute("version", "1.1")
-    writer.writeAttribute("width", "11.5in")
-    writer.writeAttribute("height", "11.5in")
+    writer.writeAttribute("width", "12in")
+    writer.writeAttribute("height", "12in")
 }
 
 private fun writeEpilog(writer: XMLStreamWriter) {
@@ -305,8 +305,8 @@ private fun writeEpilog(writer: XMLStreamWriter) {
 fun writeText(writer: XMLStreamWriter, number: Int, rotate: Int) {
     writer.writeStartElement("text")
     writer.writeAttribute("class", "num")
-    writer.writeAttribute("x", "-2.75in")
-    writer.writeAttribute("y", "-2.75in")
+    writer.writeAttribute("x", "-3in")
+    writer.writeAttribute("y", "-3in")
     writer.writeAttribute("dominant-baseline", "middle")
     writer.writeAttribute("text-anchor", "middle")
     writer.writeAttribute("transform", String.format("rotate(%d)", rotate))
@@ -327,8 +327,7 @@ private fun <R> save(output: String, block: (XMLStreamWriter) -> R) {
 
 private fun save(points: List<Vector>, output: String) {
     save(output) {
-        writeRect(it, "0.25in", "11in")
-        writeRect(it, "0in", "11.5in")
+        writeRect(it, "0in", "12in")
 
         for (point in points) {
             it.writeStartElement("circle")
@@ -348,8 +347,8 @@ private fun save(number: Int, output: String) {
         it.writeEndElement()
 
         it.writeStartElement("svg")
-        it.writeAttribute("x", "5.75in")
-        it.writeAttribute("y", "5.75in")
+        it.writeAttribute("x", "6in")
+        it.writeAttribute("y", "6in")
 
         writeText(it, number, 0)
         writeText(it, number, 90)
