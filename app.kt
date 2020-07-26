@@ -101,18 +101,21 @@ private fun getRandomVector(maxRadius: Double): Vector {
 private fun generatePoints(number: Int): List<Vector> {
     val result = mutableListOf<Body>()
 
-    val fullRowsCount = number / 10
-    val lastRowColumnCount = number % 10
-    val rowsCount = fullRowsCount + (if (lastRowColumnCount == 0) 0 else 1)
+    val sqrtNumber = sqrt(number.toDouble()).toInt()
+    val maxRowColumnCount = if (sqrtNumber * sqrtNumber == number) sqrtNumber else sqrtNumber + 1
 
-    val rowHeight = 1.0 / rowsCount.toDouble()
-    val fullRowColumnWidth = 1.0 / 10
+    val fullRowsCount = number / maxRowColumnCount
+    val lastRowColumnCount = number % maxRowColumnCount
+
+    val widthHeight = 1.0 / 10.0
+
+    val border = 0.0 + (1.0 - (maxRowColumnCount * widthHeight)) / 2
 
     for (i in 0 until fullRowsCount) {
-        for (j in 0 until 10) {
+        for (j in 0 until maxRowColumnCount) {
             result.add(
                 Body(
-                    Vector((i + 0.5) * rowHeight, (j + 0.5) * fullRowColumnWidth),
+                    Vector(border + (i + 0.5) * widthHeight, border + (j + 0.5) * widthHeight),
                     getRandomVector(maxVelocity)
                 )
             )
@@ -120,25 +123,25 @@ private fun generatePoints(number: Int): List<Vector> {
     }
 
     if (lastRowColumnCount != 0) {
-        val lastRowColumnWidth = 1.0 / lastRowColumnCount
+        val lastRowColumnWidth = (1.0 - 2.0 * border) / lastRowColumnCount
 
         for (j in 0 until lastRowColumnCount) {
             result.add(
                 Body(
-                    Vector((fullRowsCount + 0.5) * rowHeight, (j + 0.5) * lastRowColumnWidth),
+                    Vector(border + (fullRowsCount + 0.5) * widthHeight, border + (j + 0.5) * lastRowColumnWidth),
                     getRandomVector(maxVelocity)
                 )
             )
         }
     }
 
-    return simulate(result)
+    return simulate(result, border)
 }
 
-private fun simulate(result: MutableList<Body>): List<Vector> {
+private fun simulate(result: MutableList<Body>, border: Double): List<Vector> {
     while (hasAtLeastOneVelocity(result)) {
         val k1 = analyseInnerCollisions(result)
-        val k2 = analyseOuterCollisions(result)
+        val k2 = analyseOuterCollisions(result, border)
 
         val k = if (k1 < k2) k1 else k2
 
@@ -162,15 +165,18 @@ private fun simulate(result: MutableList<Body>): List<Vector> {
             }
         }
 
+        val topLeftBorder = getTopLeftBorder(border)
+        val rightBottomBorder = getRightBottomBorder(border)
+
         for (i in result.indices) {
-            if (result[i].velocity.x.sign > 0.0 && (result[i].point.x - (1.0 - radius)).absoluteValue < eps ||
-                result[i].velocity.x.sign < 0.0 && (result[i].point.x - (0.0 + radius)).absoluteValue < eps
+            if (result[i].velocity.x.sign > 0.0 && (result[i].point.x - rightBottomBorder).absoluteValue < eps ||
+                result[i].velocity.x.sign < 0.0 && (result[i].point.x - topLeftBorder).absoluteValue < eps
             ) {
                 result[i] = Body(result[i].point, Vector(-result[i].velocity.x, result[i].velocity.y))
             }
 
-            if (result[i].velocity.y.sign > 0.0 && (result[i].point.y - (1.0 - radius)).absoluteValue < eps ||
-                result[i].velocity.y.sign < 0.0 && (result[i].point.y - (0.0 + radius)).absoluteValue < eps
+            if (result[i].velocity.y.sign > 0.0 && (result[i].point.y - rightBottomBorder).absoluteValue < eps ||
+                result[i].velocity.y.sign < 0.0 && (result[i].point.y - topLeftBorder).absoluteValue < eps
             ) {
                 result[i] = Body(result[i].point, Vector(result[i].velocity.x, -result[i].velocity.y))
             }
@@ -186,17 +192,20 @@ private fun move(bodies: MutableList<Body>, k: Double) {
     }
 }
 
-private fun analyseOuterCollisions(bodies: List<Body>): Double {
+private fun analyseOuterCollisions(bodies: List<Body>, border: Double): Double {
     var k = Double.POSITIVE_INFINITY
 
     for (i in bodies.indices) {
         val body = bodies[i]
 
+        val topLeftBorder = getTopLeftBorder(border)
+        val rightBottomBorder = getRightBottomBorder(border)
+
         val newK = listOf(
-            getK(body.point.x, body.velocity.x, 1.0 - radius),
-            getK(body.point.x, body.velocity.x, 0.0 + radius),
-            getK(body.point.y, body.velocity.y, 1.0 - radius),
-            getK(body.point.y, body.velocity.y, 0.0 + radius)
+            getK(body.point.x, body.velocity.x, rightBottomBorder),
+            getK(body.point.x, body.velocity.x, topLeftBorder),
+            getK(body.point.y, body.velocity.y, rightBottomBorder),
+            getK(body.point.y, body.velocity.y, topLeftBorder)
         ).min() ?: Double.POSITIVE_INFINITY
 
         if (newK < k) {
@@ -206,6 +215,10 @@ private fun analyseOuterCollisions(bodies: List<Body>): Double {
 
     return k
 }
+
+private fun getRightBottomBorder(border: Double) = 1.0 - border - radius
+
+private fun getTopLeftBorder(border: Double) = 0.0 + border + radius
 
 private fun getK(point: Double, velocity: Double, border: Double): Double {
     val k = (border - point) / velocity
